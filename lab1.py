@@ -20,8 +20,8 @@ output_file = sys.argv[4]
 
 
 def main():
-    for i in sys.argv:
-        print(i)
+    with Image.open(f"{terrain}") as im:
+        im.show()
 
 if __name__ == "__main__":
     if len(sys.argv) != 5:
