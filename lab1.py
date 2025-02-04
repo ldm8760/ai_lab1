@@ -71,54 +71,65 @@ coords = [
     (269, 313), (282, 321), (243, 327), (230, 327)
 ]
 
+king_moves = [
+    (-1, -1), (-1, 0), (-1, 1),
+    (0, -1),         (0, 1),
+    (1, -1), (1, 0), (1, 1)
+]
 
 pos_x = 230
 pos_y = 327
 visited = [(pos_x, pos_y)]
 optimal_pixel = 25.9
 
-def king_random_move(current_pixel: tuple[int, int]) -> tuple[int, int]:
-    new_pos_x = current_pixel[0] + zero_one_randomizer()
-    new_pos_y = current_pixel[1] + zero_one_randomizer()
-    return tuple(new_pos_x, new_pos_y)
-
+def pixel_calc(pixel: str) -> int:
+    t = traversal_scores.get(f"#{pixel[0]:02x}{pixel[1]:02x}{pixel[2]:02x}".upper())
+    return t
 
 def chebyshev_distance(current_pos: tuple[int, int], next_goal: tuple[int, int]):
     distance = max(abs(current_pos[0] - next_goal[0]), abs(current_pos[1] - next_goal[1]))
     return distance
 
-def heuristic(start, goal):
-    return chebyshev_distance(start, goal) * optimal_pixel 
+def heuristic(start, goal, pixel):
+    return chebyshev_distance(start, goal) * pixel_calc(pixel) 
 
-# fix this its broken for whatever reason
-def zero_one_randomizer() -> int:
-    return Random.randint(-1, 1)
+def fn_score(g, h):
+    return h + g
 
-def a_star_test(start, goal):
+# this is incorrect for now
+def gn_score(current: tuple[int, int], start: tuple[int, int]):
+    return chebyshev_distance(current, start)
+
+
+def a_star_test(start: tuple[int, int], goal: tuple[int, int], pixels):
     current = start
-    pq = PriorityQueue(8)
+    pq = PriorityQueue(100)
     pq.put(current)
+    vis = set(current)
 
-    for i in range(20):
-        next_pixel = king_random_move(current)
-        print(f"estimated distance from goal: {heuristic(next_pixel)}")
+    g = gn_score(current, start)
+    h = heuristic(start, goal, pixels[current[0], current[1]])
+    f = fn_score(g, h)
+
+    while pq is not None:
+        for dx, dy in king_moves:
+            neighbor_x = current[0] + dx
+            neighbor_y = current[1] + dy
+            fn = fn_score(gn_score((neighbor_x, neighbor_y), start), heuristic(start, goal, pixels[neighbor_x, neighbor_y]))
+            print(fn)
 
     if current == goal:
         visited.append(coords[len(visited)])
 
 def main():
     im = Image.open("terrain.png")
+    im = im.convert("RGB")
     pixels = im.load()
 
-    for key, value in traversal_scores.items():
-        print(f"{key}: {value}")
+    # print(coords[0], coords[1])
+    a_star_test(coords[0], coords[1], pixels)
 
-    for i in range(len(coords) - 1):
-        print(f"coord {i} and {i + 1}: {chebyshev_distance(coords[i], coords[i + 1])}")
-
-    a_star_test(coords[i], coords[i + 1])
-
-    im.save("modified.png")
+    im.save("terrain.png")
     im.show()   
 
 if __name__ == "__main__":
