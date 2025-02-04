@@ -111,12 +111,16 @@ def a_star_test(start: tuple[int, int], goal: tuple[int, int], pixels):
     h = heuristic(start, goal, pixels[current[0], current[1]])
     f = fn_score(g, h)
 
-    while pq is not None:
-        for dx, dy in king_moves:
-            neighbor_x = current[0] + dx
-            neighbor_y = current[1] + dy
-            fn = fn_score(gn_score((neighbor_x, neighbor_y), start), heuristic(start, goal, pixels[neighbor_x, neighbor_y]))
-            print(fn)
+    # while pq is not None:
+    for dx, dy in king_moves:
+        neighbor_x = current[0] + dx
+        neighbor_y = current[1] + dy
+        gn = gn_score((neighbor_x, neighbor_y), start)
+        hn = heuristic(start, goal, pixels[neighbor_x, neighbor_y])
+        print(f"gn: {gn}")
+        print(f"hn: {hn}")
+        fn = fn_score(gn, hn)
+        print(f"fn: {fn}")
 
     if current == goal:
         visited.append(coords[len(visited)])
