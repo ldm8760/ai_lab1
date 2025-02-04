@@ -90,6 +90,7 @@ def main():
 
     for i in range(len(coords) - 1):
         print(f"coord {i} and {i + 1}: {chebyshev_distance(coords[i], coords[i + 1])}")
+        print(f"H(n): chebyshev distance * avg traversal score: {traversal_avg * chebyshev_distance(coords[i], coords[i + 1])}")
 
     print(traversal_avg)
     
