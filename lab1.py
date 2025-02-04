@@ -1,5 +1,7 @@
+from random import Random
 import sys
 from PIL import Image
+from queue import PriorityQueue
 
 def test_image():
     im = Image.open("terrain.png")
@@ -73,28 +75,51 @@ coords = [
 pos_x = 230
 pos_y = 327
 visited = [(pos_x, pos_y)]
-traversal_avg = sum(value for value in traversal_scores.values() if value < float("inf")) / len(traversal_scores)
+optimal_pixel = 25.9
+
+def king_random_move(current_pixel: tuple[int, int]) -> tuple[int, int]:
+    new_pos_x = current_pixel[0] + zero_one_randomizer()
+    new_pos_y = current_pixel[1] + zero_one_randomizer()
+    return tuple(new_pos_x, new_pos_y)
+
 
 def chebyshev_distance(current_pos: tuple[int, int], next_goal: tuple[int, int]):
     distance = max(abs(current_pos[0] - next_goal[0]), abs(current_pos[1] - next_goal[1]))
     return distance
 
-def A_star(start, goal, h):
-    pass
+def heuristic(start, goal):
+    return chebyshev_distance(start, goal) * optimal_pixel 
+
+# fix this its broken for whatever reason
+def zero_one_randomizer() -> int:
+    return Random.randint(-1, 1)
+
+def a_star_test(start, goal):
+    current = start
+    pq = PriorityQueue(8)
+    pq.put(current)
+
+    for i in range(20):
+        next_pixel = king_random_move(current)
+        print(f"estimated distance from goal: {heuristic(next_pixel)}")
+
+    if current == goal:
+        visited.append(coords[len(visited)])
 
 def main():
-    # test_image()
+    im = Image.open("terrain.png")
+    pixels = im.load()
 
     for key, value in traversal_scores.items():
         print(f"{key}: {value}")
 
     for i in range(len(coords) - 1):
         print(f"coord {i} and {i + 1}: {chebyshev_distance(coords[i], coords[i + 1])}")
-        print(f"H(n): chebyshev distance * avg traversal score: {traversal_avg * chebyshev_distance(coords[i], coords[i + 1])}")
 
-    print(traversal_avg)
-    
+    a_star_test(coords[i], coords[i + 1])
 
+    im.save("modified.png")
+    im.show()   
 
 if __name__ == "__main__":
     if len(sys.argv) != 5:
