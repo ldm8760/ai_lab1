@@ -82,23 +82,27 @@ pos_y = 327
 visited = [(pos_x, pos_y)]
 optimal_pixel = 25.9
 
-def pixel_calc(pixel: str) -> int:
-    t = traversal_scores.get(f"#{pixel[0]:02x}{pixel[1]:02x}{pixel[2]:02x}".upper())
-    return t
-
 def chebyshev_distance(current_pos: tuple[int, int], next_goal: tuple[int, int]):
     distance = max(abs(current_pos[0] - next_goal[0]), abs(current_pos[1] - next_goal[1]))
     return distance
 
-def heuristic(start, goal, pixel):
-    return chebyshev_distance(start, goal) * pixel_calc(pixel) 
-
 def fn_score(g, h):
     return h + g
 
+
+
+def pixel_calc(pixel: tuple[int, int]) -> int:
+    t = traversal_scores.get(f"#{pixel[0]:02x}{pixel[1]:02x}{pixel[2]:02x}".upper())
+    return t
+
+def heuristic(current: tuple[int, int], goal: tuple[int, int]):
+    return chebyshev_distance(current, goal) * optimal_pixel
+
 # this is incorrect for now
-def gn_score(current: tuple[int, int], start: tuple[int, int]):
-    return chebyshev_distance(current, start)
+def gn_score(current: tuple[int, int], start: tuple[int, int], pixel):
+    return chebyshev_distance(current, start) * pixel_calc(pixel[current[0], current[1]])
+
+
 
 
 def a_star_test(start: tuple[int, int], goal: tuple[int, int], pixels):
@@ -107,20 +111,25 @@ def a_star_test(start: tuple[int, int], goal: tuple[int, int], pixels):
     pq.put(current)
     vis = set(current)
 
-    g = gn_score(current, start)
-    h = heuristic(start, goal, pixels[current[0], current[1]])
+    g = gn_score(current, start, pixels)
+    h = heuristic(current, goal)
     f = fn_score(g, h)
 
     # while pq is not None:
-    for dx, dy in king_moves:
-        neighbor_x = current[0] + dx
-        neighbor_y = current[1] + dy
-        gn = gn_score((neighbor_x, neighbor_y), start)
-        hn = heuristic(start, goal, pixels[neighbor_x, neighbor_y])
-        print(f"gn: {gn}")
-        print(f"hn: {hn}")
-        fn = fn_score(gn, hn)
-        print(f"fn: {fn}")
+    for i in range(5):
+        for dx, dy in king_moves:
+            neighbor_x = current[0] + dx
+            neighbor_y = current[1] + dy
+            if (neighbor_x, neighbor_y) in vis:
+                continue
+            gn = gn_score((neighbor_x, neighbor_y), start, pixels)
+            print(f"pos_x: {neighbor_x}, pos_y: {neighbor_y}")
+            print(f"g(n): {gn}")
+            hn = heuristic((neighbor_x, neighbor_y), goal)
+            print(f"h(n): {hn}")
+            fn = fn_score(gn, hn)
+            print(f"f(n): {fn}")
+            print("-----")
 
     if current == goal:
         visited.append(coords[len(visited)])
@@ -134,7 +143,7 @@ def main():
     a_star_test(coords[0], coords[1], pixels)
 
     im.save("terrain.png")
-    im.show()   
+    # im.show()   
 
 if __name__ == "__main__":
     if len(sys.argv) != 5:
