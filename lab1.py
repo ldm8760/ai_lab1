@@ -86,8 +86,10 @@ def chebyshev_distance(current_pos: tuple[int, int], next_goal: tuple[int, int])
     distance = max(abs(current_pos[0] - next_goal[0]), abs(current_pos[1] - next_goal[1]))
     return distance
 
-def fn_score(g, h):
-    return h + g
+def fn_score(start, current, goal, pixels) -> float:
+    hn = heuristic(current, goal)
+    gn = dist_to_start(current, start, pixels)
+    return hn + gn
 
 
 
@@ -98,10 +100,9 @@ def pixel_calc(pixel: tuple[int, int]) -> int:
 def heuristic(current: tuple[int, int], goal: tuple[int, int]):
     return chebyshev_distance(current, goal) * optimal_pixel
 
-# this is incorrect for now
-def gn_score(current: tuple[int, int], start: tuple[int, int], pixel):
+# still needs to account for height but for now this works
+def dist_to_start(current: tuple[int, int], start: tuple[int, int], pixel):
     return chebyshev_distance(current, start) * pixel_calc(pixel[current[0], current[1]])
-
 
 
 
@@ -111,28 +112,37 @@ def a_star_test(start: tuple[int, int], goal: tuple[int, int], pixels):
     pq.put(current)
     vis = set(current)
 
-    g = gn_score(current, start, pixels)
-    h = heuristic(current, goal)
-    f = fn_score(g, h)
+    print(fn_score(start, current, goal, pixels))
 
-    # while pq is not None:
-    for i in range(5):
+    while pq.not_empty:
+        current = pq.get()
+        check: dict[tuple[int, int], float] = {}
         for dx, dy in king_moves:
             neighbor_x = current[0] + dx
             neighbor_y = current[1] + dy
-            if (neighbor_x, neighbor_y) in vis:
+            new = (neighbor_x, neighbor_y)
+            if new in vis:
                 continue
-            gn = gn_score((neighbor_x, neighbor_y), start, pixels)
-            print(f"pos_x: {neighbor_x}, pos_y: {neighbor_y}")
-            print(f"g(n): {gn}")
-            hn = heuristic((neighbor_x, neighbor_y), goal)
-            print(f"h(n): {hn}")
-            fn = fn_score(gn, hn)
-            print(f"f(n): {fn}")
-            print("-----")
 
-    if current == goal:
-        visited.append(coords[len(visited)])
+            check[new] = fn_score(start, current, goal, pixels)
+            # gn = gn_score((neighbor_x, neighbor_y), start, pixels)
+            # print(f"pos_x: {neighbor_x}, pos_y: {neighbor_y}")
+            # print(f"g(n): {gn}")
+            # hn = heuristic((neighbor_x, neighbor_y), goal)
+            # print(f"h(n): {hn}")
+            # fn = fn_score(gn, hn)
+            # print(f"f(n): {fn}")
+            # print("-----")
+
+        
+        # print(f"f(n): {check, check[new]}")
+        print(min(check, key=check.get))
+
+        if current == goal:
+            visited.append(coords[len(visited)])
+            break
+    
+
 
 def main():
     im = Image.open("terrain.png")
