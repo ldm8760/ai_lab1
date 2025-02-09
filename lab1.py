@@ -1,11 +1,10 @@
-from random import Random
 import sys
 from PIL import Image, ImageColor
 import heapq
 
 pixel_long = 10.29 # meters, east/west
 pixel_lat = 7.55 # meters, north/south
-pixel_area = pixel_long * pixel_lat
+pixel_area = 7.55
 
 def calculate_traversal_score(color: str) -> int: # less is more
     pixel_speed = land_types[color]
@@ -54,8 +53,8 @@ king_moves = [
     (1, -1), (1, 0), (1, 1)
 ]
 
-def chebyshev_distance(current_pos: tuple[int, int], next_goal: tuple[int, int]):
-    return max(abs(current_pos[0] - next_goal[0]), abs(current_pos[1] - next_goal[1]))
+# def chebyshev_distance(current_pos: tuple[int, int], next_goal: tuple[int, int]):
+#     return max(abs(current_pos[0] - next_goal[0]), abs(current_pos[1] - next_goal[1]))
 
 def position_cost(pixels, pos: tuple[int, int]) -> int:
     rgb = pixels[pos[0], pos[1]]
@@ -63,8 +62,12 @@ def position_cost(pixels, pos: tuple[int, int]) -> int:
     return cost
 
 def heuristic(current: tuple[int, int], goal: tuple[int, int]) -> float:
-    optimal_pixel = 25.9
-    return chebyshev_distance(current, goal) * optimal_pixel
+    x_cost = pixel_long * abs(goal[0] - current[0])
+    y_cost = pixel_lat * abs(goal[1] - current[1])
+    z1 = elevation_matrix[current[1]][current[0]]
+    z2 = elevation_matrix[goal[1]][goal[0]]
+    return x_cost + y_cost
+    # return chebyshev_distance(current, goal) + 1.5 * abs(z2 - z1)
 
 def reconstruct_path(came_from: dict, current: tuple[int, int]) -> list:
     path = [current]
@@ -103,6 +106,12 @@ def a_star_search(start: tuple[int, int], goal: tuple[int, int], pixels) -> list
 visited = [(230, 327)]
 terrain = sys.argv[1]
 elevation = sys.argv[2]
+elevation_matrix = []
+with open(f"{elevation}", "r") as f:
+    for line in f:
+        across = [float(value) for value in line.split()[:-5]]
+        elevation_matrix.append(across)
+
 coords_file = sys.argv[3]
 output_file = sys.argv[4]
 points_to_visit = []
@@ -124,7 +133,7 @@ def main():
         for position in path:
             total_path.append(position)         
 
-    print(len(total_path) * pixel_area)
+    print(int(len(total_path) * pixel_area))
 
     for x, y in total_path:
         pixels[x, y] = ImageColor.getcolor("#a146dd", "RGB")
