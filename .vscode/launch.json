@@ -12,10 +12,10 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "testcaseZip/distanceCalcX/terrain.png",
-                "testcaseZip/distanceCalcX/mpp.txt",
-                "testcaseZip/distanceCalcX/path.txt",
-                "distanceXtest.png"
+                "testcaseZip/stripElevation/terrain.png",
+                "testcaseZip/stripElevation/mpp.txt",
+                "testcaseZip/stripElevation/path.txt",
+                "stripElevation.png"
             ]
         }
     ]

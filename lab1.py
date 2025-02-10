@@ -1,43 +1,22 @@
 import sys
 from PIL import Image, ImageColor
 import heapq
+from math import sqrt, pow
 
 pixel_long = 10.29 # meters, east/west
 pixel_lat = 7.55 # meters, north/south
-pixel_area = 7.55
-
-def calculate_traversal_score(color: str) -> int: # less is more
-    pixel_speed = land_types[color]
-    if pixel_speed != 0:
-        score = pixel_area / pixel_speed
-    else:
-        score = float("inf")
-    return round(score, 2)
-
-land_types: dict[str, float] = {
-    "#F89412": 3,    # open_land
-    "#FFC000": 2.2,  # rough_meadow
-    "#FFFFFF": 2.7,  # easy_movement_forest
-    "#02D03C": 2.3,  # slow_run_forest
-    "#028828": 1.6,  # walk_forest
-    "#054918": 0,    # impassible_vegetation
-    "#0000FF": 1,    # lake_swamp_marsh
-    "#473303": 3,    # paved_road
-    "#000000": 3,    # footpath
-    "#CD0065": 0     # out_of_bounds
-}
 
 traversal_scores: dict[str, float] = {
-    "#F89412": calculate_traversal_score("#F89412"),  # open_land
-    "#FFC000": calculate_traversal_score("#FFC000"),  # rough_meadow
-    "#FFFFFF": calculate_traversal_score("#FFFFFF"),  # easy_movement_forest
-    "#02D03C": calculate_traversal_score("#02D03C"),  # slow_run_forest
-    "#028828": calculate_traversal_score("#028828"),  # walk_forest
-    "#054918": calculate_traversal_score("#054918"),  # impassible_vegetation
-    "#0000FF": calculate_traversal_score("#0000FF"),  # lake_swamp_marsh
-    "#473303": calculate_traversal_score("#473303"),  # paved_road
-    "#000000": calculate_traversal_score("#000000"),  # footpath
-    "#CD0065": calculate_traversal_score("#CD0065")   # out_of_bounds
+    "#F89412": 1,  # open_land
+    "#FFC000": 1.36,  # rough_meadow
+    "#FFFFFF": 1.11,  # easy_movement_forest
+    "#02D03C": 1.30,  # slow_run_forest
+    "#028828": 1.86,  # walk_forest
+    "#054918": float("inf"),  # impassible_vegetation
+    "#0000FF": 3,  # lake_swamp_marsh
+    "#473303": 1,  # paved_road
+    "#000000": 1,  # footpath
+    "#CD0065": float("inf")   # out_of_bounds
 }
 
 king_moves = [
@@ -46,21 +25,18 @@ king_moves = [
     (1, -1), (1, 0), (1, 1)
 ]
 
-# def chebyshev_distance(current_pos: tuple[int, int], next_goal: tuple[int, int]):
-#     return max(abs(current_pos[0] - next_goal[0]), abs(current_pos[1] - next_goal[1]))
-
-def position_cost(pixels, pos: tuple[int, int]) -> int:
-    rgb = pixels[pos[0], pos[1]]
+def position_cost(pixels, current: tuple[int, int], goal: tuple[int, int]) -> float:
+    distance = heuristic(current, goal)
+    rgb = pixels[goal[0], goal[1]]
     cost = traversal_scores.get(f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}".upper())
-    return cost
+    return distance * cost
 
 def heuristic(current: tuple[int, int], goal: tuple[int, int]) -> float:
-    x_cost = pixel_long * abs(goal[0] - current[0])
-    y_cost = pixel_lat * abs(goal[1] - current[1])
-    z1 = elevation_matrix[current[1]][current[0]]
-    z2 = elevation_matrix[goal[1]][goal[0]]
-    return x_cost + y_cost
-    # return chebyshev_distance(current, goal) + 1.5 * abs(z2 - z1)
+    xmove = abs(current[0] - goal[0]) * pixel_long
+    ymove = abs(current[1] - goal[1]) * pixel_lat
+    zmove = abs(elevation_matrix[current[1]][current[0]] - elevation_matrix[goal[1]][goal[0]])
+    total_cost = sqrt(pow(xmove, 2) + pow(ymove, 2) + pow(zmove, 2))
+    return total_cost
 
 def reconstruct_path(came_from: dict, current: tuple[int, int]) -> list:
     path = [current]
@@ -84,9 +60,15 @@ def a_star_search(start: tuple[int, int], goal: tuple[int, int], pixels) -> list
             return reconstruct_path(came_from, current)
 
         for dx, dy in king_moves:
-            neighbor = (current[0] + dx, current[1] + dy)
+            neighbor_x = current[0] + dx
+            neighbor_y = current[1] + dy
 
-            tentative_g = g_score[current] + position_cost(pixels, neighbor)
+            if 0 <= neighbor_x < 395 and 0 <= neighbor_y < 500:
+                neighbor = (neighbor_x, neighbor_y)
+            else:
+                continue
+
+            tentative_g = g_score[current] + position_cost(pixels, current, neighbor)
 
             if neighbor not in g_score or tentative_g < g_score[neighbor]:
                 came_from[neighbor] = current
@@ -115,7 +97,6 @@ with open(f"{coords_file}", "r") as f:
 
 def main():
     im = Image.open(f"{terrain}")
-    # im = Image.open("terrain.png")
     im = im.convert("RGB")
     pixels = im.load()
 
@@ -126,13 +107,23 @@ def main():
         for position in path:
             total_path.append(position)         
 
-    print(int(len(total_path) * pixel_area))
+    total_distance = 0
+    for i in range(len(total_path) - 1):
+        dx = (total_path[i][0] - total_path[i + 1][0]) * pixel_long
+        dy = (total_path[i][1] - total_path[i + 1][1]) * pixel_lat
+
+        z1 = elevation_matrix[total_path[i][1]][total_path[i][0]]
+        z2 = elevation_matrix[total_path[i + 1][1]][total_path[i + 1][0]]
+
+        dz = z1 - z2
+        total_distance += (dx**2 + dy**2 + dz**2) ** 0.5
+
+    print(total_distance)
 
     for x, y in total_path:
         pixels[x, y] = ImageColor.getcolor("#a146dd", "RGB")
 
     im.save(f"{output_file}")
-    # im.save(f"modified.png")
     im.show()
 
 if __name__ == "__main__":
